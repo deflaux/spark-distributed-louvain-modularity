@@ -6,9 +6,9 @@ The dga-graphX package contains several pre-built executable graph algorithms bu
 
 ### pre-requisites
 
- * [Spark]  (http://spark.apache.org/)   0.9.0 or later
- * [graphX]  (http://spark.apache.org/docs/latest/graphx-programming-guide.html)   
- * [Gradle] (http://www.gradle.org/) 
+ * [Spark](http://spark.apache.org/)   2.2.0 or later
+ * [graphX](http://spark.apache.org/docs/latest/graphx-programming-guide.html)
+ * [Gradle](http://www.gradle.org/) and/or [sbt](http://www.scala-sbt.org/)
 
 ### build
 
@@ -18,6 +18,11 @@ If necessary edit the build.gradle file to set your version of spark and graphX
 
 Check the build/dist folder for dga-graphx-0.1.jar.   
 
+To make an "uberjar":
+
+> sbt assembly
+
+Check the target/scala-2.11 folder for dga-graphx-assembly-0.1.jar.
 
 # Algorithms 
 
@@ -47,7 +52,7 @@ Usage: class com.soteradefense.dga.graphx.louvain.Main$ [options] [<property>=<v
   -o <value> | --output <value>
         output path Required
   -m <value> | --master <value>
-        spark master, local[N] or spark://host:port default=local
+        spark master, local[N] or spark://host:port, omit this option to dynamically load spark properties
   -h <value> | --sparkhome <value>
         SPARK_HOME Required to run on cluster
   -n <value> | --jobname <value>
