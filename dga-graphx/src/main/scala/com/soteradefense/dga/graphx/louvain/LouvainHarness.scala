@@ -4,7 +4,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.graphx._
 import scala.reflect.ClassTag
-import org.apache.spark.Logging
+import org.apache.spark.internal.Logging
 
 /**
  * Coordinates execution of the louvain distributed community detection process on a graph.

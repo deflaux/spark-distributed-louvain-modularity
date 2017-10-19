@@ -1,5 +1,6 @@
 package com.soteradefense.dga.graphx.louvain
 
+import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
@@ -11,7 +12,7 @@ import org.apache.spark.graphx._
 case class Config(
     input:String = "",
     output: String = "",
-    master:String="local",
+    master:String = "",
     appName:String="graphX analytic",
     jars:String="",
     sparkHome:String="",
@@ -35,12 +36,12 @@ object Main {
     val parser = new scopt.OptionParser[Config](this.getClass().toString()){
       opt[String]('i',"input") action {(x,c)=> c.copy(input=x)}  text("input file or path  Required.")
       opt[String]('o',"output") action {(x,c)=> c.copy(output=x)} text("output path Required")
-      opt[String]('m',"master") action {(x,c)=> c.copy(master=x)} text("spark master, local[N] or spark://host:port default=local")
+      opt[String]('m',"master") action {(x,c)=> c.copy(master=x)} text("spark master, local[N] or spark://host:port, omit this option to dynamically load spark properties")
       opt[String]('h',"sparkhome") action {(x,c)=> c.copy(sparkHome=x)} text("SPARK_HOME Required to run on cluster")
       opt[String]('n',"jobname") action {(x,c)=> c.copy(appName=x)} text("job name")
       opt[Int]('p',"parallelism") action {(x,c)=> c.copy(parallelism=x)} text("sets spark.default.parallelism and minSplits on the edge file. default=based on input partitions")
       opt[Int]('x',"minprogress") action {(x,c)=> c.copy(minProgress=x)} text("Number of vertices that must change communites for the algorithm to consider progress. default=2000")
-       opt[Int]('y',"progresscounter") action {(x,c)=> c.copy(progressCounter=x)} text("Number of times the algorithm can fail to make progress before exiting. default=1")
+      opt[Int]('y',"progresscounter") action {(x,c)=> c.copy(progressCounter=x)} text("Number of times the algorithm can fail to make progress before exiting. default=1")
       opt[String]('d',"edgedelimiter") action {(x,c)=> c.copy(edgedelimiter=x)} text("specify input file edge delimiter. default=\",\"")
       opt[String]('j',"jars") action {(x,c)=> c.copy(jars=x)} text("comma seperated list of jars")
       opt[Boolean]('z',"ipaddress") action {(x,c)=> c.copy(ipaddress=x)} text("Set to true to convert ipaddresses to Long ids. Defaults to false")
@@ -80,7 +81,11 @@ object Main {
     
     // Create the spark context
     var sc: SparkContext = null
-    if (master.indexOf("local") == 0 ){
+    if (master == "") {
+      println(s"sparkcontext from dynamically loading spark properties")
+      sc = new SparkContext(new SparkConf())
+    }
+    else if (master.indexOf("local") == 0 ){
       println(s"sparkcontext = new SparkContext($master,$jobname)")
       sc = new SparkContext(master, jobname)
     }

@@ -27,9 +27,9 @@ object LouvainCore {
     */
    def createLouvainGraph[VD: ClassTag](graph: Graph[VD,Long]) : Graph[VertexState,Long]= {
     // Create the initial Louvain graph.  
-    val nodeWeightMapFunc = (e:EdgeTriplet[VD,Long]) => Iterator((e.srcId,e.attr), (e.dstId,e.attr))
+    val nodeWeightMapFunc = (e:EdgeContext[VD,Long,Long]) => e.sendToDst(e.attr)
     val nodeWeightReduceFunc = (e1:Long,e2:Long) => e1+e2
-    val nodeWeights = graph.mapReduceTriplets(nodeWeightMapFunc,nodeWeightReduceFunc)
+    val nodeWeights = graph.aggregateMessages(nodeWeightMapFunc,nodeWeightReduceFunc)
     
     val louvainGraph = graph.outerJoinVertices(nodeWeights)((vid,data,weightOption)=> { 
       val weight = weightOption.getOrElse(0L)
@@ -69,7 +69,7 @@ object LouvainCore {
     println("totalEdgeWeight: "+totalGraphWeight.value)
     
     // gather community information from each vertex's local neighborhood
-    var msgRDD = louvainGraph.mapReduceTriplets(sendMsg,mergeMsg)
+    var msgRDD = louvainGraph.aggregateMessages(sendMsg,mergeMsg)
     var activeMessages = msgRDD.count() //materializes the msgRDD and caches it in memory
      
     var updated = 0L - minProgress
@@ -114,7 +114,7 @@ object LouvainCore {
 	   
        // gather community information from each vertex's local neighborhood
 	   val oldMsgs = msgRDD
-       msgRDD = louvainGraph.mapReduceTriplets(sendMsg, mergeMsg).cache()
+       msgRDD = louvainGraph.aggregateMessages(sendMsg, mergeMsg).cache()
        activeMessages = msgRDD.count()  // materializes the graph by forcing computation
 	 
        oldMsgs.unpersist(blocking=false)
@@ -163,10 +163,8 @@ object LouvainCore {
   /**
    * Creates the messages passed between each vertex to convey neighborhood community data.
    */
-  private def sendMsg(et:EdgeTriplet[VertexState,Long]) = {
-    val m1 = (et.dstId,Map((et.srcAttr.community,et.srcAttr.communitySigmaTot)->et.attr))
-	val m2 = (et.srcId,Map((et.dstAttr.community,et.dstAttr.communitySigmaTot)->et.attr))
-	Iterator(m1, m2)    
+  private def sendMsg(et:EdgeContext[VertexState,Long,Map[(Long, Long),Long]]) = {
+    et.sendToDst(Map((et.dstAttr.community,et.dstAttr.communitySigmaTot)->et.attr))
   }
   
   
@@ -292,9 +290,9 @@ object LouvainCore {
       .partitionBy(PartitionStrategy.EdgePartition2D).groupEdges(_+_)
     
     // calculate the weighted degree of each node
-    val nodeWeightMapFunc = (e:EdgeTriplet[VertexState,Long]) => Iterator((e.srcId,e.attr), (e.dstId,e.attr))
+    val nodeWeightMapFunc = (e:EdgeContext[VertexState,Long,Long]) => e.sendToDst(e.attr)
     val nodeWeightReduceFunc = (e1:Long,e2:Long) => e1+e2
-    val nodeWeights = compressedGraph.mapReduceTriplets(nodeWeightMapFunc,nodeWeightReduceFunc)
+    val nodeWeights = compressedGraph.aggregateMessages(nodeWeightMapFunc,nodeWeightReduceFunc)
     
     // fill in the weighted degree of each node
    // val louvainGraph = compressedGraph.joinVertices(nodeWeights)((vid,data,weight)=> { 
