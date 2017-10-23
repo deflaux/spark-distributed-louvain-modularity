@@ -74,7 +74,7 @@ Usage: class com.soteradefense.dga.graphx.louvain.Main$ [options] [<property>=<v
 
 To run a small local example execute:
 ```
-bin/louvain -i examples/small_edges.tsv -o test_output --edgedelimiter "\t" 2> stderr.txt
+bin/louvain -i examples/small_edges.tsv -o test_output --edgedelimiter "\t" -m local 2> stderr.txt
 ```
 
 Spark produces alot of output, so sending stderr to a log file is recommended.  Examine the test_output folder. you should see
